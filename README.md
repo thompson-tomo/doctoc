@@ -34,6 +34,22 @@ by github or other sites via a command line flag.
 
     npm install -g doctoc
 
+## Configuring logging level
+
+Use the `--loglevel` option to configure the log levelused; e.g., `doctoc --loglevel warn .`
+
+By default,
+
+- LogLevel is set to info.
+
+Supported values are in order from lowest to highest,
+
+- trace
+- debug
+- info
+- warn
+- error
+
 ## Configuring Table of Contents
 
 ### TOC title text

@@ -7,6 +7,7 @@ var path      =  require('path')
   , minimist  =  require('minimist')
   , file      =  require('./lib/file')
   , transform =  require('./lib/transform')
+  , log       = require('loglevel')
   , files;
 
 function cleanPath(path) {
@@ -17,14 +18,14 @@ function cleanPath(path) {
 
 function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, title, notitle, entryPrefix, processAll, stdOut, updateOnly, dryRun) {
   if (processAll) {
-    console.log('--all flag is enabled. Including headers before the TOC location.')
+    log.debug('--all flag is enabled. Including headers before the TOC location.')
   }
 
   if (updateOnly) {
-    console.log('--update-only flag is enabled. Only updating files that already have a TOC.')
+    log.debug('--update-only flag is enabled. Only updating files that already have a TOC.')
   }
   
-  console.log('\n==================\n');
+  log.debug('\n==================\n');
 
   var transformed = files
     .map(function (x) {
@@ -48,7 +49,7 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, title, no
       console.log('==================\n\n"%s" is up to date', x.path)
     }
     else {
-      console.log('"%s" is up to date', x.path);
+      log.debug('"%s" is up to date', x.path);
     }
   });
 
@@ -56,10 +57,10 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, title, no
     if (stdOut) {
       console.log('==================\n\n"%s" should be updated', x.path)
     } else if (dryRun) {
-      console.log('"%s" should be updated but wasn\'t due to dry run.', x.path);
+      log.warn('"%s" should be updated but wasn\'t due to dry run.', x.path);
     }
     else {
-      console.log('"%s" will be updated', x.path);
+      log.info('"%s" will be updated', x.path);
       fs.writeFileSync(x.path, x.data, 'utf8');
     }
   });
@@ -70,9 +71,9 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, title, no
 
 function printUsageAndExit(isErr) {
 
-  var outputFunc = isErr ? console.error : console.info;
+  var outputFunc = isErr ? log.error : log.info;
 
-  outputFunc('Usage: doctoc [mode] [--entryprefix prefix] [--notitle | --title title] [--maxlevel level] [--minlevel level] [--all] [--update-only] <path> (where path is some path to a directory (e.g., .) or a file (e.g., README.md))');
+  outputFunc('Usage: doctoc [mode] [--entryprefix prefix] [--notitle | --title title] [--maxlevel level] [--minlevel level] [--all] [--loglevel level] [--update-only] <path> (where path is some path to a directory (e.g., .) or a file (e.g., README.md))');
   outputFunc('\nAvailable modes are:');
   for (var key in modes) {
     outputFunc('  --%s\t%s', key, modes[key]);
@@ -94,7 +95,7 @@ var mode = modes['github'];
 
 var argv = minimist(process.argv.slice(2)
     , { boolean: [ 'h', 'help', 'T', 'notitle', 's', 'stdout', 'all' , 'u', 'update-only', 'd', 'dryrun'].concat(Object.keys(modes))
-    , string: [ 'title', 't', 'maxlevel', 'm', 'minlevel', 'n', 'entryprefix' ]
+    , string: [ 'title', 't', 'maxlevel', 'm', 'minlevel', 'n', 'entryprefix', 'l', 'loglevel' ]
     , unknown: function(a) { return (a[0] == '-' ? (console.error('Unknown option(s): ' + a), printUsageAndExit(true)) : true); }
     });
 
@@ -117,6 +118,11 @@ var updateOnly = argv.u || argv['update-only']
 var dryRun = argv.d || argv.dryrun || false;
 
 var maxHeaderLevel = argv.m || argv.maxlevel;
+
+var logLevel = argv.l || argv.loglevel || "info";
+
+log.setLevel(logLevel, false);
+
 if (maxHeaderLevel && isNaN(maxHeaderLevel)) { console.error('Max. heading level specified is not a number: ' + maxHeaderLevel), printUsageAndExit(true); }
 
 var minHeaderLevel = argv.n || argv.minlevel || 1;
@@ -131,20 +137,20 @@ for (var i = 0; i < argv._.length; i++) {
     , stat = fs.statSync(target)
 
   if (stat.isDirectory()) {
-    console.log ('\nDocToccing "%s" and its sub directories for %s.', target, mode);
+    log.debug('\nDocToccing "%s" and its sub directories for %s.', target, mode);
     files = file.findMarkdownFiles(target);
   } else {
-    console.log ('\nDocToccing single file "%s" for %s.', target, mode);
+    log.debug('\nDocToccing single file "%s" for %s.', target, mode);
     files = [{ path: target }];
   }
 
   transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, title, notitle, entryPrefix, processAll, stdOut, updateOnly, dryRun);
 
   if (dryRun && process.exitCode === 1) {
-    console.log('\nDocumentation tables of contents are out of date.');
+    log.warn('\nDocumentation tables of contents are out of date.');
   }
   else {
-    console.log('\nEverything is OK.');
+    log.info('\nEverything is OK.');
   }
 }
 
