@@ -127,6 +127,14 @@ By default,
 - no limit is placed on Markdown-formatted headings,
 - whereas headings from embedded HTML are limited to 4 levels.
 
+### Specifying the required number of headers to trigger toc generation
+
+Use the `--requiredHeaders` option to specify the minimum items required to be in a table of contents for it to be included in a markdown page.
+
+By default,
+
+- The required items is set to 1
+
 ### Printing to stdout
 
 You can print to stdout by using the `-s` or `--stdout` option.
