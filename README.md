@@ -137,6 +137,14 @@ You can print to stdout by using the `-s` or `--stdout` option.
 
 Use `--update-only` or `-u` to only update the existing ToC. That is, the Markdown files without ToC will be left untouched. It is good if you want to use `doctoc` with `lint-staged`.
 
+### Pad table of contents title
+
+Use the `--padtitle` option to add a padding line above the TOC which ensures formatters such as prettier will pass; e.g., `doctoc --padtitle true .`
+
+By default,
+
+- no padding is added above the table of contents title
+
 ### Usage as a `git` hook
 
 doctoc can be used as a [pre-commit](http://pre-commit.com) hook by using the

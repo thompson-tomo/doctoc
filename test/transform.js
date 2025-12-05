@@ -8,9 +8,9 @@ function inspect(obj, depth) {
   console.log(require('util').inspect(obj, false, depth || 5, true));
 }
 
-function check(md, anchors, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll) {
+function check(md, anchors, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll, padTitle) {
   test('transforming', function (t) {
-    var res = transform(md, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll)
+    var res = transform(md, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll, undefined, padTitle)
 
     // remove wrapper
     var data = res.data.split('\n');
@@ -171,6 +171,75 @@ check(
   , undefined
   , undefined
   , '**Contents**'
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'Custom TOC title test with padding'
+    ].join('\n')
+  , [ '\n'
+    , '**Contents**\n\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , '**Contents**'
+  , undefined
+  , undefined
+  , undefined
+  , true
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'Custom TOC title test without padding'
+    ].join('\n')
+  , [ '**Contents**\n\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , '**Contents**'
+  , undefined
+  , undefined
+  , undefined
+  , false
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'No TOC title test with padding'
+    ].join('\n')
+  , [ '\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , undefined
+  , true
+  , undefined
+  , undefined
+  , true
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'No TOC title test without padding'
+    ].join('\n')
+  , [ '\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , undefined
+  , true
+  , undefined
+  , undefined
+  , false
 )
 
 check(
