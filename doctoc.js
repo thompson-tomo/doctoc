@@ -7,6 +7,7 @@ var path      =  require('path')
   , minimist  =  require('minimist')
   , file      =  require('./lib/file')
   , transform =  require('./lib/transform')
+  , log       = require('loglevel')
   , files;
 
 function cleanPath(path) {
@@ -17,14 +18,14 @@ function cleanPath(path) {
 
 function transformAndSave(files, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll, stdOut, updateOnly) {
   if (processAll) {
-    console.log('--all flag is enabled. Including headers before the TOC location.')
+    log.debug('--all flag is enabled. Including headers before the TOC location.')
   }
 
   if (updateOnly) {
-    console.log('--update-only flag is enabled. Only updating files that already have a TOC.')
+    log.debug('--update-only flag is enabled. Only updating files that already have a TOC.')
   }
   
-  console.log('\n==================\n');
+  log.debug('\n==================\n');
 
   var transformed = files
     .map(function (x) {
@@ -44,14 +45,14 @@ function transformAndSave(files, mode, maxHeaderLevel, title, notitle, entryPref
   }
 
   unchanged.forEach(function (x) {
-    console.log('"%s" is up to date', x.path);
+    log.debug('"%s" is up to date', x.path);
   });
 
   changed.forEach(function (x) { 
     if (stdOut) {
       console.log('==================\n\n"%s" should be updated', x.path)
     } else {
-      console.log('"%s" will be updated', x.path);
+      log.info('"%s" will be updated', x.path);
       fs.writeFileSync(x.path, x.data, 'utf8');
     }
   });
@@ -59,9 +60,9 @@ function transformAndSave(files, mode, maxHeaderLevel, title, notitle, entryPref
 
 function printUsageAndExit(isErr) {
 
-  var outputFunc = isErr ? console.error : console.info;
+  var outputFunc = isErr ? log.error : log.info;
 
-  outputFunc('Usage: doctoc [mode] [--entryprefix prefix] [--notitle | --title title] [--maxlevel level] [--all] [--update-only] <path> (where path is some path to a directory (e.g., .) or a file (e.g., README.md))');
+  outputFunc('Usage: doctoc [mode] [--entryprefix prefix] [--notitle | --title title] [--maxlevel level] [--all] [--loglevel level] [--update-only] <path> (where path is some path to a directory (e.g., .) or a file (e.g., README.md))');
   outputFunc('\nAvailable modes are:');
   for (var key in modes) {
     outputFunc('  --%s\t%s', key, modes[key]);
@@ -83,8 +84,8 @@ var mode = modes['github'];
 
 var argv = minimist(process.argv.slice(2)
     , { boolean: [ 'h', 'help', 'T', 'notitle', 's', 'stdout', 'all' , 'u', 'update-only'].concat(Object.keys(modes))
-    , string: [ 'title', 't', 'maxlevel', 'm', 'entryprefix' ]
-    , unknown: function(a) { return (a[0] == '-' ? (console.error('Unknown option(s): ' + a), printUsageAndExit(true)) : true); }
+    , string: [ 'title', 't', 'maxlevel', 'm', 'entryprefix', 'l', 'loglevel' ]
+    , unknown: function(a) { return (a[0] == '-' ? (log.error('Unknown option(s): ' + a), printUsageAndExit(true)) : true); }
     });
 
 if (argv.h || argv.help) {
@@ -105,23 +106,27 @@ var stdOut = argv.s || argv.stdout
 var updateOnly = argv.u || argv['update-only']
 
 var maxHeaderLevel = argv.m || argv.maxlevel;
-if (maxHeaderLevel && isNaN(maxHeaderLevel) || maxHeaderLevel < 0) { console.error('Max. heading level specified is not a positive number: ' + maxHeaderLevel), printUsageAndExit(true); }
+
+var logLevel = argv.l || argv.loglevel || "info";
+
+log.setLevel(logLevel, false);
+if (maxHeaderLevel && isNaN(maxHeaderLevel) || maxHeaderLevel < 0) { log.error('Max. heading level specified is not a positive number: ' + maxHeaderLevel), printUsageAndExit(true); }
 
 for (var i = 0; i < argv._.length; i++) {
   var target = cleanPath(argv._[i])
     , stat = fs.statSync(target)
 
   if (stat.isDirectory()) {
-    console.log ('\nDocToccing "%s" and its sub directories for %s.', target, mode);
+    log.debug('\nDocToccing "%s" and its sub directories for %s.', target, mode);
     files = file.findMarkdownFiles(target);
   } else {
-    console.log ('\nDocToccing single file "%s" for %s.', target, mode);
+    log.debug('\nDocToccing single file "%s" for %s.', target, mode);
     files = [{ path: target }];
   }
 
   transformAndSave(files, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll, stdOut, updateOnly);
 
-  console.log('\nEverything is OK.');
+  log.info('\nEverything is OK.');
 }
 
 module.exports.transform = transform;

@@ -112,6 +112,22 @@ Here we'll discuss...
 
 Running doctoc will insert the toc at that location.
 
+### Configuring logging level
+
+Use the `--loglevel` option to configure the log levelused; e.g., `doctoc --loglevel warn .`
+
+By default,
+
+- LogLevel is set to info.
+
+Supported values are in order from lowest to highest,
+
+- trace
+- debug
+- info
+- warn
+- error
+
 ### Specifying a custom TOC title
 
 Use the `--title` option to specify a (Markdown-formatted) custom TOC title; e.g., `doctoc --title '**Contents**' .` From then on, you can simply run `doctoc <file>` and doctoc will keep the title you specified.
