@@ -51,7 +51,7 @@ cyrillic
 ## There's an error here
 bad
 
-## ## Replace .gitlab-ci.yml
+## Replace .gitlab-ci.yml
 file name
 
 ## `this identifier`
