@@ -80,3 +80,37 @@ test('\nformatted headers', function (t) {
 
   t.end()
 })
+
+test('\nrandom html characters', function (t) {
+  var content = require('fs').readFileSync(__dirname + '/fixtures/index-with-special-characters.html', 'utf8');
+  var headers = transform(content);
+
+  t.deepEqual(
+      headers.toc.split('\n')
+    , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*',
+        '',
+        '- [Heading One](#heading-one)',
+        '  - [Subheading 2](#subheading-2)',
+        '' ]
+    , 'generates a correct toc when readme has nameless table headers'
+  )
+
+  t.end()
+})
+
+test('\nrandom md characters', function (t) {
+  var content = require('fs').readFileSync(__dirname + '/fixtures/readme-with-special-characters.md', 'utf8');
+  var headers = transform(content);
+
+  t.deepEqual(
+      headers.toc.split('\n')
+    , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*',
+        '',
+        '- [Heading One](#heading-one)',
+        '  - [Subheading 2](#subheading-2)',
+        '' ]
+    , 'generates a correct toc when readme has nameless table headers'
+  )
+
+  t.end()
+})
