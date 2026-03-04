@@ -12,8 +12,8 @@ test('\nshould print to stdout with --stdout option', function (t) {
         console.error('exec error: ', error);
         return;
       }
-      t.deepEqual(stdout
-        , fs.readFileSync(__dirname + '/fixtures/stdout.md', 'utf8')
+      t.same(stdout
+        , fs.readFileSync(__dirname + '/fixtures/stdout.log', 'utf8')
         , 'spits out the correct table of contents')
 
       t.end()
@@ -27,10 +27,36 @@ test('\nshould print to stdout with -s option', function (t) {
         console.error('exec error: ', error);
         return;
       }
-      t.deepEqual(stdout
-        , fs.readFileSync(__dirname + '/fixtures/stdout.md', 'utf8')
+      t.same(stdout
+        , fs.readFileSync(__dirname + '/fixtures/stdout.log', 'utf8')
         , 'spits out the correct table of contents')
 
       t.end()
     })
 })
+
+test('\nshould exit with error code as --stdout option is not supported on a directory', function (t) {
+
+    exec('node doctoc.js test/fixtures/invalid_stdout --stdout', function (error, stdout, stderr) {
+      if (error) {
+        t.same(error.code, 2, 'process exited with error code 2 as expected');
+        t.end();
+      } else {
+        t.fail('process did not produce an error: ' + error);
+        t.end();
+      }
+    })
+})
+
+test('\nshould exit with error code as --stdout option is not supported on multiple files', function (t) {
+
+    exec('node doctoc.js test/fixtures/first.md text/fixtures/second.md --stdout', function (error, stdout, stderr) {
+      if (error) {
+        t.same(error.code, 2, 'process exited with error code 2 as expected');
+        t.end();
+      } else {
+        t.fail('process did not produce an error: ' + error);
+        t.end();
+      }
+    })
+ })

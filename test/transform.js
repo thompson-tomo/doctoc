@@ -8,9 +8,9 @@ function inspect(obj, depth) {
   console.log(require('util').inspect(obj, false, depth || 5, true));
 }
 
-function check(md, anchors, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll) {
+function check(md, anchors, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, padTitle) {
   test('transforming', function (t) {
-    var res = transform(md, mode, maxHeaderLevel, title, notitle, entryPrefix, processAll)
+    var res = transform(md, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, padTitle)
 
     // remove wrapper
     var data = res.data.split('\n');
@@ -28,9 +28,14 @@ function check(md, anchors, mode, maxHeaderLevel, title, notitle, entryPrefix, p
       .concat(mdLines);
 
     t.ok(res.transformed, 'transforms it');
-    t.deepEqual(data, rig, 'generates correct anchors')
+    t.same(data, rig, 'generates correct anchors')
     t.end()
   })
+}
+
+function getCommentLines(transformRes){
+    var lines = transformRes.wrappedToc.split('\n')
+    return lines.slice(0,2).concat(lines[lines.length - 1])
 }
 //function check() {}
 
@@ -64,7 +69,7 @@ check(
     , 'some main usage here'
     ].join('\r\n')
   , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n'
-    , '- [My Module using \\r\\n line endings](#my-module-using-%5Cr%5Cn-line-endings)\n'
+    , '- [My Module using \\r\\n line endings](#my-module-using-rn-line-endings)\n'
     ,   '  - [API](#api)\n'
     ,     '    - [Method One](#method-one)\n'
     ,     '    - [Method Two](#method-two)\n'
@@ -170,7 +175,94 @@ check(
     ].join('')
   , undefined
   , undefined
+  , undefined
+  , undefined
   , '**Contents**'
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'Custom TOC title test with padding'
+    ].join('\n')
+  , [ '\n'
+    , '**Contents**\n\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , '**Contents**'
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , true
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'Custom TOC title test without padding'
+    ].join('\n')
+  , [ '**Contents**\n\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , '**Contents**'
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , false
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'No TOC title test with padding'
+    ].join('\n')
+  , [ '\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , true
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , true
+)
+
+check(
+    [ '# Heading'
+    , ''
+    , 'No TOC title test without padding'
+    ].join('\n')
+  , [ '\n'
+    , '- [Heading](#heading)\n\n\n'
+    ].join('')
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , true
+  , undefined
+  , undefined
+  , undefined
+  , undefined
+  , false
 )
 
 check(
@@ -186,6 +278,71 @@ check(
     ].join('')
   , undefined
   , 2
+)
+
+check(
+    [ '# H1h'
+    , '## H2h'
+    , '### H3h'
+    , ''
+    , 'Different Min. & Max. level test - hashed'
+    ].join('\n')
+  , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n'
+    , '- [H2h](#h2h)\n'
+    , '  - [H3h](#h3h)\n\n\n'
+    ].join('')
+  , undefined
+  , 3
+  , 2
+)
+
+check(
+    [ '# H1h'
+    , '## H2h'
+    , '### H3h'
+    , ''
+    , 'Same Max. & Min. level (not 1) test - hashed'
+    ].join('\n')
+  , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n'
+    , '- [H2h](#h2h)\n\n\n'
+    ].join('')
+  , undefined
+  , 2
+  , 2
+)
+
+check(
+    [ '# H1h'
+    , '## H2h'
+    , '### H3h'
+    , ''
+    , 'Not enough toc items - hashed'
+    ].join('\n')
+  , [ ''
+    ].join('')
+  , undefined
+  , 2
+  , undefined
+  , 3
+)
+
+check(
+    [ '# H1h'
+    , '## H2a'
+    , '### H3h'
+    , '## H2b'
+    , ''
+    , 'Enough toc items - hashed'
+    ].join('\n')
+  , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n'
+    , '- [H1h](#h1h)\n'
+    , '  - [H2a](#h2a)\n'
+    , '  - [H2b](#h2b)\n\n\n'
+    ].join('')
+  , undefined
+  , 2
+  , undefined
+  , 3
 )
 
 check(
@@ -206,6 +363,23 @@ check(
 
 check(
     [
+      'H1u'
+    , '==='
+    , 'H2u'
+    , '---'
+    , ''
+    , 'Min. & Max. level both 1 test - underlined'
+    ].join('\n')
+  , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n'
+    , '- [H1u](#h1u)\n\n\n'
+    ].join('')
+  , undefined
+  , 1
+  , 1
+)
+
+check(
+    [
       '<html><head></head><body>'
     , '<h1>H1html</h1><h2>H2html</h2><h3>H3html</h3>'
     , '</body></html>'
@@ -221,7 +395,7 @@ check(
 
 
 test('transforming when old toc exists', function (t) {
-  var md = [ 
+  var md = [
       '# Header above'
     , ''
     , 'The above header should be ignored since it is above the existing toc'
@@ -232,7 +406,7 @@ test('transforming when old toc exists', function (t) {
     , ''
     , '- [OldHeader](#oldheader)'
     , ''
-    , '<!-- END doctoc generated TOC please keep comment here to allow auto update -->' 
+    , '<!-- END doctoc generated TOC please keep comment here to allow auto update -->'
     , '## Header'
     , 'some content'
     , ''
@@ -240,18 +414,18 @@ test('transforming when old toc exists', function (t) {
 
   var res = transform(md)
 
-  t.ok(res.transformed, 'transforms it')     
+  t.ok(res.transformed, 'transforms it')
 
-  t.deepEqual(
+  t.same(
       res.toc.split('\n')
     , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*',
       '',
       '- [Header](#header)',
       '' ]
-    , 'replaces old toc' 
+    , 'replaces old toc'
   )
-  
-  t.deepEqual(
+
+  t.same(
       res.wrappedToc.split('\n')
     , [ '<!-- START doctoc generated TOC please keep comment here to allow auto update -->',
         '<!-- DON\'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->',
@@ -259,12 +433,12 @@ test('transforming when old toc exists', function (t) {
         '',
         '- [Header](#header)',
         '',
-        '<!-- END doctoc generated TOC please keep comment here to allow auto update -->' 
+        '<!-- END doctoc generated TOC please keep comment here to allow auto update -->'
       ]
     , 'wraps old toc'
   )
 
-  t.deepEqual(
+  t.same(
       res.data.split('\n')
     , [ '# Header above',
         '',
@@ -281,12 +455,12 @@ test('transforming when old toc exists', function (t) {
         'some content',
         '' ]
     , 'updates the content with the new toc and ignores header before existing toc'
-  ) 
+  )
   t.end()
 })
 
 test('transforming when old toc exists and --all flag is set', function (t) {
-  var md = [ 
+  var md = [
       '# Header above'
     , ''
     , 'The above header should be ignored since it is above the existing toc'
@@ -297,27 +471,27 @@ test('transforming when old toc exists and --all flag is set', function (t) {
     , ''
     , '- [OldHeader](#oldheader)'
     , ''
-    , '<!-- END doctoc generated TOC please keep comment here to allow auto update -->' 
+    , '<!-- END doctoc generated TOC please keep comment here to allow auto update -->'
     , '## Header'
     , 'some content'
     , ''
     ].join('\n')
 
-  var res = transform(md, undefined, undefined, undefined, undefined, undefined, true)
+  var res = transform(md, undefined, undefined, undefined, undefined, undefined, undefined, undefined, true)
 
-  t.ok(res.transformed, 'transforms it')     
+  t.ok(res.transformed, 'transforms it')
 
-  t.deepEqual(
+  t.same(
       res.toc.split('\n')
     , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*',
       '',
       '- [Header above](#header-above)',
       '  - [Header](#header)',
       '' ]
-    , 'replaces old toc' 
+    , 'replaces old toc'
   )
-  
-  t.deepEqual(
+
+  t.same(
       res.wrappedToc.split('\n')
     , [ '<!-- START doctoc generated TOC please keep comment here to allow auto update -->',
         '<!-- DON\'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->',
@@ -326,12 +500,12 @@ test('transforming when old toc exists and --all flag is set', function (t) {
         '- [Header above](#header-above)',
         '  - [Header](#header)',
         '',
-        '<!-- END doctoc generated TOC please keep comment here to allow auto update -->' 
+        '<!-- END doctoc generated TOC please keep comment here to allow auto update -->'
       ]
     , 'wraps old toc'
   )
 
-  t.deepEqual(
+  t.same(
       res.data.split('\n')
     , [ '# Header above',
         '',
@@ -349,12 +523,12 @@ test('transforming when old toc exists and --all flag is set', function (t) {
         'some content',
         '' ]
     , 'updates the content with the new toc and ignores header before existing toc'
-  ) 
+  )
   t.end()
 })
 
 
-// bigbucket.org
+// bitbucket.org
 check(
     [ '# My Module'
     , 'Some text here'
@@ -420,6 +594,8 @@ check(
   , undefined
   , undefined
   , undefined
+  , undefined
+  , undefined
   , '*' // pass '*' as the prefix for toc entries
 )
 
@@ -440,6 +616,8 @@ check(
     ,     '    >> [Method Two](#method-two)\n'
     ,         '      >> [Main Usage](#main-usage)\n\n\n'
     ].join('')
+  , undefined
+  , undefined
   , undefined
   , undefined
   , undefined
@@ -468,5 +646,121 @@ check(
   , undefined
   , undefined
   , undefined
+  , undefined
+  , undefined
   , '1.' // pass '1.' as the prefix for toc entries
   )
+
+check(
+    [ '# My Module'
+    , 'Some text here'
+    , '## API'
+    , '### Method One'
+    , 'works like this'
+    , '### Method Two'
+    , '#### Main Usage'
+    , 'some main usage here'
+    ].join('\n')
+  , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n'
+    , '- [My Module](#my-module)\n'
+    ,   '  - [API](#api)\n'
+    ,     '    - [Method One](#method-one)\n'
+    ,     '    - [Method Two](#method-two)\n'
+    ,         '      - [Main Usage](#main-usage)\n\n\n'
+    ].join('')
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , 'md'
+)
+
+check(
+    [ '# My Module'
+    , 'Some text here'
+    , '## API'
+    , '### Method One'
+    , 'works like this'
+    , '### Method Two'
+    , '#### Main Usage'
+    , 'some main usage here'
+    ].join('\n')
+  , [ '**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n'
+    , '- [My Module](#my-module)\n'
+    ,   '  - [API](#api)\n'
+    ,     '    - [Method One](#method-one)\n'
+    ,     '    - [Method Two](#method-two)\n'
+    ,         '      - [Main Usage](#main-usage)\n\n\n'
+    ].join('')
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , undefined
+    , 'mdx'
+)
+
+test('should use <!-- --> comments if syntax=md', function (t) {
+    var res = transform(
+                  [ '# My Module'
+                  , 'Some text here'
+                  , '## API'
+                  , '### Method One'
+                  , 'works like this'
+                  , '### Method Two'
+                  , '#### Main Usage'
+                  , 'some main usage here'
+                  ].join('\n')
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , 'md'
+              )
+
+    var commentLines = getCommentLines(res);
+    t.same(commentLines.every((line) => line.startsWith('<!--') && line.endsWith('-->')), true)
+    t.end()
+})
+
+test('should use {/* */} comments if syntax=mdx', function (t) {
+    var res = transform(
+                  [ '# My Module'
+                  , 'Some text here'
+                  , '## API'
+                  , '### Method One'
+                  , 'works like this'
+                  , '### Method Two'
+                  , '#### Main Usage'
+                  , 'some main usage here'
+                  ].join('\n')
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , undefined
+                  , 'mdx'
+              )
+
+    var commentLines = getCommentLines(res);
+    t.same(commentLines.every((line) => line.startsWith('{/*') && line.endsWith('*/}')), true)
+    t.end()
+})
