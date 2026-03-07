@@ -34,15 +34,16 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
       result.path = x.path;
       return result;
     });
-  var changed = transformed.filter(function (x) { return x.transformed; })
-    , unchanged = transformed.filter(function (x) { return !x.transformed; });
 
   if (outputArgs.stdOut) {
     transformed.forEach(function (x) {
-      stdout.writeContent(x, outputArgs.content);
+      var outcome = stdout.writeContent(x, outputArgs.content);
     });
   }
   else {
+    var changed = transformed.filter(function (x) { return x.transformed; })
+      , unchanged = transformed.filter(function (x) { return !x.transformed; })
+
     unchanged.forEach(function (x) {
       console.log('"%s" is up to date', x.path);
     });
@@ -56,9 +57,9 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
         fs.writeFileSync(x.path, x.data, "utf8");
       }
     });
-  }
-  if (outputArgs.dryRun && changed.length > 0) {
-    process.exitCode = 1;
+    if (outputArgs.dryRun && changed.length > 0) {
+      process.exitCode = 1;
+    }
   }
 }
 
