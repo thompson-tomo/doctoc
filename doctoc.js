@@ -15,7 +15,7 @@ function cleanPath(path) {
   return homeExpanded;
 }
 
-function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, stdOut, updateOnly, syntax, dryRun, padTitle) {
+function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, outputArgs, padTitle) {
   if (processAll) {
     console.log('--all flag is enabled. Including headers before the TOC location.')
   }
@@ -37,14 +37,22 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
     , unchanged = transformed.filter(function (x) { return !x.transformed; })
     , toc = transformed.filter(function (x) { return x.toc; })
 
-  if (stdOut) {
+  if (outputArgs.stdOut) {
     toc.forEach(function (x) {
-      console.log(x.toc);
+      if (outputArgs.content == "document"){
+        console.log(x.data);
+      }
+      else if(outputArgs.content == "section"){
+        console.log(x.wrappedToc);
+      }
+      else {
+        console.log(x.toc);
+      }
     });
   }
 
   unchanged.forEach(function (x) {
-    if (stdOut) {
+    if (outputArgs.stdOut && outputArgs.content === undefined) {
       console.log('==================\n\n"%s" is up to date', x.path)
     }
     else {
@@ -53,9 +61,9 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
   });
 
   changed.forEach(function (x) {
-    if (stdOut) {
+    if (outputArgs.stdOut && outputArgs.content === undefined) {
       console.log('==================\n\n"%s" should be updated', x.path);
-    } else if (dryRun) {
+    } else if (outputArgs.dryRun) {
       console.log('"%s" should be updated but wasn\'t due to dry run.', x.path);
     }
     else {
@@ -63,7 +71,7 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
       fs.writeFileSync(x.path, x.data, "utf8");
     }
   });
-  if (dryRun && changed.length > 0) {
+  if (outputArgs.dryRun && changed.length > 0) {
     process.exitCode = 1;
   }
 }
@@ -94,7 +102,7 @@ var mode = modes["github"];
 
 var argv = minimist(process.argv.slice(2)
     , { boolean: [ 'h', 'help', 'T', 'notitle', 's', 'stdout', 'all' , 'u', 'update-only', 'd', 'dryrun'].concat(Object.keys(modes))
-    , string: [ 'title', 't', 'maxlevel', 'm', 'minlevel', 'entryprefix', 'syntax', 'mintocitems', 'toctitlepaddingbefore' ]
+    , string: [ 'output-content', 'o', 'title', 't', 'maxlevel', 'm', 'minlevel', 'entryprefix', 'syntax', 'mintocitems', 'toctitlepaddingbefore' ]
     , unknown: function(a) { return (a[0] == '-' ? (console.error('Unknown option(s): ' + a), printUsageAndExit(true)) : true); }
     });
 
@@ -120,10 +128,8 @@ var entryPrefix = argv.entryprefix || '-';
 var minTocItems = argv.mintocitems || 1;
 if (minTocItems && (isNaN(minTocItems) || minTocItems <= 0)) { console.error('Min. TOC items specified is not a positive number: ' + minTocItems), printUsageAndExit(true); }
 var processAll = argv.all;
-var stdOut = argv.s || argv.stdout || false;
 var updateOnly = argv.u || argv['update-only'];
 var syntax = argv['syntax'] || 'md';
-var dryRun = argv.d || argv.dryrun || false;
 var padTitle = false;
 
 var padBeforeTitle = argv.toctitlepaddingbefore;
@@ -139,6 +145,15 @@ if (minHeaderLevel && isNaN(minHeaderLevel) || minHeaderLevel < 0) { console.err
 else if (minHeaderLevel && minHeaderLevel > 2) { console.error('Min. heading level: ' + minHeaderLevel + ' is not currently supported as greater than 2'), printUsageAndExit(true); }
 
 if (maxHeaderLevel && maxHeaderLevel < minHeaderLevel) { console.error('Max. heading level: ' + maxHeaderLevel + ' is less than the defined Min. heading level: ' + minHeaderLevel), printUsageAndExit(true); }
+
+var outputContent = argv.o || argv['output-content'];
+if(outputContent && outputContent != "document" && outputContent != "section" && outputContent != "toc"){ console.error('Output content: ' + outputContent + ' is not a supported value.'), printUsageAndExit(true); }
+
+var outputArgs = {
+  dryRun: argv.d || argv.dryrun || false,
+  stdOut: argv.s || argv.stdout || false,
+  content = outputContent
+};
 
 if (argv._.length > 1 && stdOut) {
   console.error('--stdout cannot be used to process multiple files/directories. Use --dryrun instead.');
@@ -164,7 +179,7 @@ for (var i = 0; i < argv._.length; i++) {
     files = [{ path: target }];
   }
 
-  transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, stdOut, updateOnly, syntax, dryRun, padTitle);
+  transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, outputArgs, padTitle);
 
   if (dryRun && process.exitCode === 1) {
     console.log('\nDocumentation tables of contents are out of date.');

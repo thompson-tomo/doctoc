@@ -200,7 +200,10 @@ This is useful CI environments where you want to check if your docs are up to da
 
 ### Printing to stdout
 
-You can print to stdout by using the `-s` or `--stdout` option.
+You can print to stdout by using the `-s` or `--stdout` option. Currently the stdout option will output only the toc by default.
+To output the entire document the `-o` or `--output-content` option needs to be set to `document`.
+This will become the default in v3 and as such if you are needing just the toc, we recommend setting `output-content` to `toc` to be prepared for a v3 upgrade.
+Alternatively you can set `output-content` to section, to get the toc with the header & footers which includes the toc markers.
 
 This option is only applicable when specifying a single filename which doctoc is to run on. If you are specifying a folder or multiple files, the dry run option should be used instead.
 
