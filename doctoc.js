@@ -7,6 +7,7 @@ var path = require("path"),
   minimist = require("minimist"),
   file = require("./lib/file"),
   transform = require("./lib/transform"),
+  stdout = require("./lib/writer/stdout"),
   files;
 
 function cleanPath(path) {
@@ -34,43 +35,28 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
       return result;
     });
   var changed = transformed.filter(function (x) { return x.transformed; })
-    , unchanged = transformed.filter(function (x) { return !x.transformed; })
-    , toc = transformed.filter(function (x) { return x.toc; })
+    , unchanged = transformed.filter(function (x) { return !x.transformed; });
 
   if (outputArgs.stdOut) {
-    toc.forEach(function (x) {
-      if (outputArgs.content == "document"){
-        console.log(x.data);
-      }
-      else if(outputArgs.content == "section"){
-        console.log(x.wrappedToc);
+    transformed.forEach(function (x) {
+      stdout.writeContent(x, outputArgs.content);
+    });
+  }
+  else {
+    unchanged.forEach(function (x) {
+      console.log('"%s" is up to date', x.path);
+    });
+    
+    changed.forEach(function (x) {
+      if (outputArgs.dryRun) {
+        console.log('"%s" should be updated but wasn\'t due to dry run.', x.path);
       }
       else {
-        console.log(x.toc);
+        console.log('"%s" will be updated', x.path);
+        fs.writeFileSync(x.path, x.data, "utf8");
       }
     });
   }
-
-  unchanged.forEach(function (x) {
-    if (outputArgs.stdOut && outputArgs.content === undefined) {
-      console.log('==================\n\n"%s" is up to date', x.path)
-    }
-    else {
-      console.log('"%s" is up to date', x.path);
-    }
-  });
-
-  changed.forEach(function (x) {
-    if (outputArgs.stdOut && outputArgs.content === undefined) {
-      console.log('==================\n\n"%s" should be updated', x.path);
-    } else if (outputArgs.dryRun) {
-      console.log('"%s" should be updated but wasn\'t due to dry run.', x.path);
-    }
-    else {
-      console.log('"%s" will be updated', x.path);
-      fs.writeFileSync(x.path, x.data, "utf8");
-    }
-  });
   if (outputArgs.dryRun && changed.length > 0) {
     process.exitCode = 1;
   }
