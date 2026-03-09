@@ -16,7 +16,7 @@ function cleanPath(path) {
   return homeExpanded;
 }
 
-function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, outputArgs, padTitle) {
+function transformAndSave(writer, files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, outputArgs, padTitle) {
   if (processAll) {
     console.log('--all flag is enabled. Including headers before the TOC location.')
   }
@@ -29,20 +29,24 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
 
   var transformed = files
     .map(function (x) {
+      if (!x.exists) {
+        return { path: x.path, transformed: false };
+      }
       var content = fs.readFileSync(x.path, 'utf8')
         , result = transform(content, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, padTitle);
       result.path = x.path;
       return result;
     });
-  var changed = transformed.filter(function (x) { return x.transformed; })
-    , unchanged = transformed.filter(function (x) { return !x.transformed; });
-
-  if (outputArgs.stdOut) {
+  
+  if (writer) {
     transformed.forEach(function (x) {
-      stdout.writeContent(x, outputArgs.content);
+      var outcome = writer.writeContent(x, outputArgs.content);
     });
   }
   else {
+    var changed = transformed.filter(function (x) { return x.transformed; })
+      , unchanged = transformed.filter(function (x) { return !x.transformed; })
+
     unchanged.forEach(function (x) {
       console.log('"%s" is up to date', x.path);
     });
@@ -56,9 +60,9 @@ function transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocIte
         fs.writeFileSync(x.path, x.data, "utf8");
       }
     });
-  }
-  if (outputArgs.dryRun && changed.length > 0) {
-    process.exitCode = 1;
+    if (outputArgs.dryRun && changed.length > 0) {
+      process.exitCode = 1;
+    }
   }
 }
 
@@ -138,41 +142,33 @@ if(outputContent && outputContent != "document" && outputContent != "section" &&
 var outputArgs = {
   dryRun: argv.d || argv.dryrun || false,
   stdOut: argv.s || argv.stdout || false,
-  content = outputContent
+  content: outputContent
 };
 
-if (argv._.length > 1 && stdOut) {
-  console.error('--stdout cannot be used to process multiple files/directories. Use --dryrun instead.');
+var files = [];
+var writer;
+
+if (outputArgs.stdOut){
+  writer = stdout;
+}
+
+for (var i = 0; i < argv._.length; i++) {
+  var target = cleanPath(argv._[i]);
+  files = files.concat(file.findMarkdownFiles(target, syntax));
+}
+
+if (writer && !writer.canHandle(files)){
   process.exitCode = 2;
   return;
 }
 
-for (var i = 0; i < argv._.length; i++) {
-  var target = cleanPath(argv._[i]),
-    stat = fs.statSync(target);
+transformAndSave(writer, files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, outputArgs, padTitle);
 
-  if (stat.isDirectory() && stdOut) {
-    console.error('--stdout cannot be used to process a directory. Use --dryrun instead.');
-    process.exitCode = 2;
-    return;
-  }
-
-  if (stat.isDirectory()) {
-    console.log ('\nDocToccing "%s" and its sub directories for %s.', target, mode);
-    files = file.findMarkdownFiles(target, syntax);
-  } else {
-    console.log('\nDocToccing single file "%s" for %s.', target, mode);
-    files = [{ path: target }];
-  }
-
-  transformAndSave(files, mode, maxHeaderLevel, minHeaderLevel, minTocItems, title, notitle, entryPrefix, processAll, updateOnly, syntax, outputArgs, padTitle);
-
-  if (dryRun && process.exitCode === 1) {
-    console.log('\nDocumentation tables of contents are out of date.');
-  }
-  else {
-    console.log('\nEverything is OK.');
-  }
+if (outputArgs.dryRun && process.exitCode === 1) {
+  console.log('\nDocumentation tables of contents are out of date.');
+}
+else {
+  console.log('\nEverything is OK.');
 }
 
 module.exports.transform = transform;
