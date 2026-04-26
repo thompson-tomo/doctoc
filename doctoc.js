@@ -161,6 +161,11 @@ else if (indentWidth === undefined) { indentWidth = (mode === 'bitbucket.org' ||
 var minLines = argv['document-lines-min'] || 0;
 if (isNaN(minLines)) { log.error('Document min lines: ' + minLines + ' is not a number'), printUsageAndExit(true); }
 
+var ordered = false;
+var style = undefined;
+var symbol = entryPrefix.split(',') || ['-'];
+if (ordered && style && style != 'number' && style != 'uppercase' && style != 'lowercase' && style != 'roman') { log.error('TOC List style: ' + style + ' is not valid'), printUsageAndExit(true); }
+
 var options = {
   document: {
     lines: {
@@ -174,10 +179,15 @@ var options = {
     header: {
       content: argv['toc-header-content'],
     },
+    list: {
+      ordered: ordered,
+      style: ordered ? style || 'number' : undefined
+    },
     items: {
-      indentation:{
+      indentation: {
         width: indentWidth,
-      }
+      },
+      symbol: !ordered ? symbol : undefined
     },
     title: {
       padding: {
